@@ -1,0 +1,12 @@
+.{
+    .name = .demo,
+    .version = "0.15.2",
+    .dependencies = .{
+        .zfx = .{
+            .url = "git+https://github.com/lizard-demon/zfx#e734252dd16f4207d1cc9d95cf51abf7e1954849",
+            .hash = "zfx-0.1.0-fv1E6ReUAABsyND92GSE75g3ul1L3byVQMpI1SkJaWVN",
+        },
+    },
+    .paths = .{""},
+    .fingerprint = 0xd642dfa083582586,
+}

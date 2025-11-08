@@ -13,7 +13,7 @@ That's it! The build system handles sokol + imgui setup automatically.
 ## Install
 
 ```bash
-zig fetch --save git+https://github.com/lizard-demon/zfx#97bb8812d8ab02a946d14253a7c0e8491db93fc9
+zig fetch --save git+https://github.com/lizard-demon/zfx#e734252dd16f4207d1cc9d95cf51abf7e1954849
 ```
 
 Add to your `build.zig`:
