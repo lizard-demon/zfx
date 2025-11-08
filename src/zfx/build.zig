@@ -7,17 +7,23 @@ pub const build = struct {
             target: std.Build.ResolvedTarget,
             optimize: std.builtin.OptimizeMode,
             zfx_dep: ?*std.Build.Dependency,
-        ) struct { sokol: *std.Build.Module, imgui: *std.Build.Module } {
+        ) *std.Build.Module {
             const cimgui = @import("cimgui");
             const builder = if (zfx_dep) |dep| dep.builder else b;
             const dep_cimgui = builder.dependency("cimgui", .{ .target = target, .optimize = optimize });
             const dep_sokol = builder.dependency("sokol", .{ .target = target, .optimize = optimize, .with_sokol_imgui = true });
             const conf = cimgui.getConfig(false);
             dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path(conf.include_dir));
-            return .{
-                .sokol = dep_sokol.module("sokol"),
-                .imgui = dep_cimgui.module(conf.module_name),
-            };
+
+            const zfx_root = if (zfx_dep) |dep| dep.path("src/zfx/mod.zig") else b.path("src/zfx/mod.zig");
+            return b.addModule("zfx", .{
+                .root_source_file = zfx_root,
+                .target = target,
+                .imports = &.{
+                    .{ .name = "sokol", .module = dep_sokol.module("sokol") },
+                    .{ .name = "cimgui", .module = dep_cimgui.module(conf.module_name) },
+                },
+            });
         }
 
         pub fn link(
@@ -43,7 +49,7 @@ pub const build = struct {
             target: std.Build.ResolvedTarget,
             optimize: std.builtin.OptimizeMode,
             zfx_dep: ?*std.Build.Dependency,
-        ) struct { sokol: *std.Build.Module, imgui: *std.Build.Module, dep_sokol: *std.Build.Dependency } {
+        ) struct { module: *std.Build.Module, dep_sokol: *std.Build.Dependency } {
             const cimgui = @import("cimgui");
             const builder = if (zfx_dep) |dep| dep.builder else b;
             const dep_cimgui = builder.dependency("cimgui", .{ .target = target, .optimize = optimize });
@@ -53,9 +59,19 @@ pub const build = struct {
             const emsdk_incl_path = emsdk.path("upstream/emscripten/cache/sysroot/include");
             dep_cimgui.artifact(conf.clib_name).addSystemIncludePath(emsdk_incl_path);
             dep_cimgui.artifact(conf.clib_name).step.dependOn(&dep_sokol.artifact("sokol_clib").step);
+
+            const zfx_root = if (zfx_dep) |dep| dep.path("src/zfx/mod.zig") else b.path("src/zfx/mod.zig");
+            const zfx_mod = b.addModule("zfx", .{
+                .root_source_file = zfx_root,
+                .target = target,
+                .imports = &.{
+                    .{ .name = "sokol", .module = dep_sokol.module("sokol") },
+                    .{ .name = "cimgui", .module = dep_cimgui.module(conf.module_name) },
+                },
+            });
+
             return .{
-                .sokol = dep_sokol.module("sokol"),
-                .imgui = dep_cimgui.module(conf.module_name),
+                .module = zfx_mod,
                 .dep_sokol = dep_sokol,
             };
         }

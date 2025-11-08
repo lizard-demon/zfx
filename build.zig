@@ -7,18 +7,8 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Setup graphics dependencies (null = building zfx itself)
-    const gfx = zfx.build.native.gfx(b, target, optimize, null);
-
-    // Create the zfx module with graphics dependencies
-    const zfx_mod = b.addModule("zfx", .{
-        .root_source_file = b.path("src/zfx/mod.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "sokol", .module = gfx.sokol },
-            .{ .name = "cimgui", .module = gfx.imgui },
-        },
-    });
+    // Setup zfx module with graphics dependencies (null = building zfx itself)
+    const zfx_mod = zfx.build.native.gfx(b, target, optimize, null);
 
     // Build the executable
     const exe = b.addExecutable(.{
