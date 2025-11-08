@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
     const zfx = @import("zfx").zfx;
 
     // Setup zfx module with graphics (sokol + imgui)
-    const zfx_mod = zfx.build.native.gfx(b, target, optimize, zfx_dep);
+    const zfx_mod = zfx.build.web.gfx(b, target, optimize, zfx_dep);
 
     // Build executable
     const exe = b.addExecutable(.{
@@ -23,8 +23,8 @@ pub fn build(b: *std.Build) void {
     });
 
     // Link and run
-    zfx.build.native.link(b, exe);
-    const run_cmd = zfx.build.native.run(b, exe);
+    zfx.build.web.link(b, exe);
+    const run_cmd = zfx.build.web.run(b, exe);
     if (b.args) |args| run_cmd.addArgs(args);
 
     b.step("run", "Run the demo").dependOn(&run_cmd.step);

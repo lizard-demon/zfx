@@ -61,7 +61,7 @@ pub const build = struct {
             dep_cimgui.artifact(conf.clib_name).step.dependOn(&dep_sokol.artifact("sokol_clib").step);
 
             const zfx_root = if (zfx_dep) |dep| dep.path("src/zfx/mod.zig") else b.path("src/zfx/mod.zig");
-            const zfx_mod = b.addModule("zfx", .{
+            return b.addModule("zfx", .{
                 .root_source_file = zfx_root,
                 .target = target,
                 .imports = &.{
@@ -69,11 +69,6 @@ pub const build = struct {
                     .{ .name = "cimgui", .module = dep_cimgui.module(conf.module_name) },
                 },
             });
-
-            return .{
-                .module = zfx_mod,
-                .dep_sokol = dep_sokol,
-            };
         }
 
         pub fn link(
