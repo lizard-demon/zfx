@@ -6,10 +6,12 @@ pub const build = struct {
             b: *std.Build,
             target: std.Build.ResolvedTarget,
             optimize: std.builtin.OptimizeMode,
+            zfx_dep: ?*std.Build.Dependency,
         ) struct { sokol: *std.Build.Module, imgui: *std.Build.Module } {
             const cimgui = @import("cimgui");
-            const dep_cimgui = b.dependency("cimgui", .{ .target = target, .optimize = optimize });
-            const dep_sokol = b.dependency("sokol", .{ .target = target, .optimize = optimize, .with_sokol_imgui = true });
+            const builder = if (zfx_dep) |dep| dep.builder else b;
+            const dep_cimgui = builder.dependency("cimgui", .{ .target = target, .optimize = optimize });
+            const dep_sokol = builder.dependency("sokol", .{ .target = target, .optimize = optimize, .with_sokol_imgui = true });
             const conf = cimgui.getConfig(false);
             dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path(conf.include_dir));
             return .{
@@ -40,10 +42,12 @@ pub const build = struct {
             b: *std.Build,
             target: std.Build.ResolvedTarget,
             optimize: std.builtin.OptimizeMode,
+            zfx_dep: ?*std.Build.Dependency,
         ) struct { sokol: *std.Build.Module, imgui: *std.Build.Module, dep_sokol: *std.Build.Dependency } {
             const cimgui = @import("cimgui");
-            const dep_cimgui = b.dependency("cimgui", .{ .target = target, .optimize = optimize });
-            const dep_sokol = b.dependency("sokol", .{ .target = target, .optimize = optimize, .with_sokol_imgui = true });
+            const builder = if (zfx_dep) |dep| dep.builder else b;
+            const dep_cimgui = builder.dependency("cimgui", .{ .target = target, .optimize = optimize });
+            const dep_sokol = builder.dependency("sokol", .{ .target = target, .optimize = optimize, .with_sokol_imgui = true });
             const conf = cimgui.getConfig(false);
             const emsdk = dep_sokol.builder.dependency("emsdk", .{});
             const emsdk_incl_path = emsdk.path("upstream/emscripten/cache/sysroot/include");

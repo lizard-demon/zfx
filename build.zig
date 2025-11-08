@@ -7,8 +7,8 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Setup graphics dependencies
-    const gfx = zfx.build.native.gfx(b, target, optimize);
+    // Setup graphics dependencies (null = building zfx itself)
+    const gfx = zfx.build.native.gfx(b, target, optimize, null);
 
     // Create the zfx module with graphics dependencies
     const zfx_mod = b.addModule("zfx", .{

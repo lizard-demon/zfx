@@ -13,12 +13,13 @@ That's it! The build system handles sokol + imgui setup automatically.
 ## Install
 
 ```bash
-zig fetch --save <url>
+zig fetch --save git+https://github.com/lizard-demon/zfx#97bb8812d8ab02a946d14253a7c0e8491db93fc9
 ```
 
 Add to your `build.zig`:
 
 ```zig
+const zfx_dep = b.dependency("zfx", .{ .target = target, .optimize = optimize });
 const zfx = @import("zfx");
 
 // Setup graphics (sokol + imgui)
