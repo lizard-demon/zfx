@@ -57,6 +57,11 @@ pub const build = struct {
             const conf = cimgui.getConfig(false);
             const emsdk = dep_sokol.builder.dependency("emsdk", .{});
             const emsdk_incl_path = emsdk.path("upstream/emscripten/cache/sysroot/include");
+
+            // Setup sokol to find cimgui headers
+            dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path(conf.include_dir));
+
+            // Setup cimgui for web
             dep_cimgui.artifact(conf.clib_name).addSystemIncludePath(emsdk_incl_path);
             dep_cimgui.artifact(conf.clib_name).step.dependOn(&dep_sokol.artifact("sokol_clib").step);
 
