@@ -2,83 +2,83 @@ const std = @import("std");
 
 pub fn Layout(comptime T: type) type {
     return struct {
-        fn dim(e: anytype, axis: u1) *f32 {
-            return if (axis == 0) &e.box.w else &e.box.h;
+        fn d(e: *T, a: u1) *f32 {
+            return if (a == 0) &e.box.w else &e.box.h;
+        }
+        fn pd(e: *T, a: u1) f32 {
+            return @floatFromInt(if (a == 0) e.pad[0] + e.pad[2] else e.pad[1] + e.pad[3]);
+        }
+        fn along(e: *T, a: u1) bool {
+            return @intFromEnum(e.dir) == a;
         }
 
-        fn pad(e: anytype, axis: u1) f32 {
-            return if (axis == 0) @floatFromInt(e.pad[0] + e.pad[2]) else @floatFromInt(e.pad[1] + e.pad[3]);
+        fn extremes(kids: []*T, a: u1, comptime least: bool) [2]f32 {
+            var e1: f32 = if (least) 3.4e38 else -3.4e38;
+            var e2 = e1;
+            for (kids) |k| {
+                const v = d(k, a).*;
+                if (@abs(v - e1) < 0.001) continue;
+                if (if (least) v < e1 else v > e1) {
+                    e2 = e1;
+                    e1 = v;
+                } else if (if (least) v < e2 else v > e2) e2 = v;
+            }
+            return .{ e1, e2 };
         }
 
-        fn along(e: anytype, axis: u1) bool {
-            return @intFromEnum(e.dir) == axis;
-        }
+        fn size(e: *T, a: u1) void {
+            for (e.kids) |k| if (k.kids.len > 0) size(k, a);
 
-        fn isType(v: anytype, comptime tag: anytype) bool {
-            return @intFromEnum(v) == @intFromEnum(tag);
-        }
+            const is_along = along(e, a);
+            const parent_d = d(e, a);
+            const parent_pd = pd(e, a);
+            var content: f32 = 0;
+            var total_pad = parent_pd;
+            var grow_cnt: i32 = 0;
 
-        fn size(e: *T, a: std.mem.Allocator, axis: u1) !void {
-            var q: std.ArrayList(*T) = .{};
-            defer q.deinit(a);
-            var buf: std.ArrayList(*T) = .{};
-            defer buf.deinit(a);
-            try q.append(a, e);
-            var i: usize = 0;
-            while (i < q.items.len) : (i += 1) {
-                const p = q.items[i];
-                const is_along = along(p, axis);
-                const d = dim(p, axis);
-                const pd = pad(p, axis);
-                var content: f32 = 0;
-                var total_pad: f32 = pd;
-                var grow_cnt: i32 = 0;
-                buf.clearRetainingCapacity();
-                for (p.kids, 0..) |k, ki| {
-                    const ksz = &k.sz[axis];
-                    const kd = dim(k, axis);
-                    if (k.kids.len > 0) try q.append(a, k);
-                    const t = @intFromEnum(ksz.t);
-                    if (t < 2) try buf.append(a, k);
-                    if (is_along) {
-                        if (t != 3) content += kd.*;
-                        if (t == 1) grow_cnt += 1;
-                        if (ki > 0) {
-                            const g: f32 = @floatFromInt(p.gap);
-                            content += g;
-                            total_pad += g;
-                        }
-                    } else content = @max(kd.*, content);
-                }
-                for (p.kids) |k| {
-                    const ksz = &k.sz[axis];
-                    const kd = dim(k, axis);
-                    if (@intFromEnum(ksz.t) == 3) {
-                        kd.* = (d.* - total_pad) * ksz.v;
-                        if (is_along) content += kd.*;
-                    }
-                }
+            for (e.kids, 0..) |k, i| {
+                const sz = &k.sz[a];
+                const t = @intFromEnum(sz.t);
                 if (is_along) {
-                    var space = d.* - pd - content;
-                    if (space < 0) try compress(T, buf.items, &space, axis) else if (space > 0 and grow_cnt > 0) try expand(T, buf.items, &space, axis);
-                } else {
-                    for (buf.items) |k| {
-                        const ksz = &k.sz[axis];
-                        const kmin = if (axis == 0) k.min[0] else k.min[1];
-                        const kd = dim(k, axis);
-                        const max_sz = d.* - pd;
-                        if (@intFromEnum(ksz.t) == 1) kd.* = @min(max_sz, ksz.mx);
-                        kd.* = @max(kmin, @min(kd.*, max_sz));
+                    if (t != 3) content += d(k, a).*;
+                    if (t == 1) grow_cnt += 1;
+                    if (i > 0) {
+                        const g: f32 = @floatFromInt(e.gap);
+                        content += g;
+                        total_pad += g;
                     }
+                } else content = @max(d(k, a).*, content);
+            }
+
+            for (e.kids) |k| {
+                const sz = &k.sz[a];
+                if (@intFromEnum(sz.t) == 3) {
+                    d(k, a).* = (parent_d.* - total_pad) * sz.v;
+                    if (is_along) content += d(k, a).*;
+                }
+            }
+
+            if (is_along) {
+                var space = parent_d.* - parent_pd - content;
+                if (space < 0) adjust(e.kids, &space, a, true) else if (space > 0 and grow_cnt > 0) adjust(e.kids, &space, a, false);
+            } else {
+                for (e.kids) |k| {
+                    const sz = &k.sz[a];
+                    const max_sz = parent_d.* - parent_pd;
+                    if (@intFromEnum(sz.t) == 1) d(k, a).* = @min(max_sz, sz.mx);
+                    d(k, a).* = @max(k.min[a], @min(d(k, a).*, max_sz));
                 }
             }
         }
 
         fn pos(e: *T, p: @Vector(2, f32)) void {
-            const pd = @Vector(2, f32){ @floatFromInt(e.pad[0]), @floatFromInt(e.pad[1]) };
+            const dir = @intFromEnum(e.dir);
+            const pd_vec = @Vector(2, f32){ @floatFromInt(e.pad[0]), @floatFromInt(e.pad[1]) };
+            const pd_full = @Vector(2, f32){ @floatFromInt(e.pad[0] + e.pad[2]), @floatFromInt(e.pad[1] + e.pad[3]) };
+
             var content: @Vector(2, f32) = @splat(0);
             for (e.kids) |k| {
-                if (@intFromEnum(e.dir) == 0) {
+                if (dir == 0) {
                     content[0] += k.box.w;
                     content[1] = @max(content[1], k.box.h);
                 } else {
@@ -87,15 +87,13 @@ pub fn Layout(comptime T: type) type {
                 }
             }
             if (e.kids.len > 0) {
-                const g: f32 = @floatFromInt(e.gap);
-                const gc: f32 = @floatFromInt(e.kids.len - 1);
-                if (@intFromEnum(e.dir) == 0) content[0] += g * gc else content[1] += g * gc;
+                const gap_total: f32 = @floatFromInt(e.gap * @as(u16, @intCast(e.kids.len - 1)));
+                content[dir] += gap_total;
             }
-            const pdx: f32 = @floatFromInt(e.pad[0] + e.pad[2]);
-            const pdy: f32 = @floatFromInt(e.pad[1] + e.pad[3]);
-            var off = p + pd;
-            const extra = @Vector(2, f32){ e.box.w - pdx - content[0], e.box.h - pdy - content[1] };
-            if (@intFromEnum(e.dir) == 0) {
+
+            var off = p + pd_vec;
+            const extra = @Vector(2, f32){ e.box.w, e.box.h } - pd_full - content;
+            if (dir == 0) {
                 off[0] += switch (@intFromEnum(e.al[0])) {
                     1 => extra[0] / 2,
                     2 => extra[0],
@@ -108,94 +106,48 @@ pub fn Layout(comptime T: type) type {
                     else => 0,
                 };
             }
+
+            const gap: f32 = @floatFromInt(e.gap);
             for (e.kids) |k| {
                 k.box.x = off[0];
                 k.box.y = off[1];
                 pos(k, off);
-                const g: f32 = @floatFromInt(e.gap);
-                if (@intFromEnum(e.dir) == 0) off[0] += k.box.w + g else off[1] += k.box.h + g;
+                off[dir] += (if (dir == 0) k.box.w else k.box.h) + gap;
             }
         }
 
-        fn compress(comptime U: type, kids: []*U, space: *f32, axis: u1) !void {
-            const a = std.heap.page_allocator;
-            var buf: std.ArrayList(*U) = .{};
-            defer buf.deinit(a);
-            for (kids) |k| try buf.append(a, k);
-            while (space.* < -0.001 and buf.items.len > 0) {
-                var lg: f32 = 0;
-                var lg2: f32 = 0;
-                for (buf.items) |k| {
-                    const d = dim(k, axis).*;
-                    if (@abs(d - lg) < 0.001) continue;
-                    if (d > lg) {
-                        lg2 = lg;
-                        lg = d;
-                    } else if (d > lg2) lg2 = d;
-                }
-                var rem = lg2 - lg;
-                rem = @max(rem, space.* / @as(f32, @floatFromInt(buf.items.len)));
-                var idx: usize = 0;
-                while (idx < buf.items.len) {
-                    const k = buf.items[idx];
-                    const d = dim(k, axis);
-                    const mn = if (axis == 0) k.min[0] else k.min[1];
-                    if (@abs(d.* - lg) < 0.001) {
-                        const prev = d.*;
-                        d.* += rem;
-                        if (d.* <= mn) {
-                            d.* = mn;
-                            _ = buf.swapRemove(idx);
-                            continue;
+        fn adjust(kids: []*T, space: *f32, a: u1, comptime shrink: bool) void {
+            var active: usize = 0;
+            for (kids) |k| {
+                if (shrink or @intFromEnum(k.sz[a].t) == 1) active += 1;
+            }
+            if (active == 0) return;
+
+            while ((if (shrink) space.* < -0.001 else space.* > 0.001) and active > 0) {
+                const ex = extremes(kids, a, !shrink);
+                const delta = if (shrink) @max(ex[1] - ex[0], space.* / @as(f32, @floatFromInt(active))) else @min(ex[1] - ex[0], space.* / @as(f32, @floatFromInt(active)));
+
+                for (kids) |k| {
+                    const sz = &k.sz[a];
+                    if (shrink or @intFromEnum(sz.t) == 1) {
+                        if (@abs(d(k, a).* - ex[0]) < 0.001) {
+                            const prev = d(k, a).*;
+                            d(k, a).* += delta;
+                            const limit = if (shrink) k.min[a] else sz.mx;
+                            if (if (shrink) d(k, a).* <= limit else d(k, a).* >= limit) {
+                                d(k, a).* = limit;
+                                active -= 1;
+                            }
+                            space.* -= (d(k, a).* - prev);
                         }
-                        space.* -= (d.* - prev);
                     }
-                    idx += 1;
                 }
             }
         }
 
-        fn expand(comptime U: type, kids: []*U, space: *f32, axis: u1) !void {
-            const a = std.heap.page_allocator;
-            var buf: std.ArrayList(*U) = .{};
-            defer buf.deinit(a);
-            for (kids) |k| if (@intFromEnum(k.sz[axis].t) == 1) try buf.append(a, k);
-            while (space.* > 0.001 and buf.items.len > 0) {
-                var sm: f32 = 3.4e38;
-                var sm2: f32 = 3.4e38;
-                for (buf.items) |k| {
-                    const d = dim(k, axis).*;
-                    if (@abs(d - sm) < 0.001) continue;
-                    if (d < sm) {
-                        sm2 = sm;
-                        sm = d;
-                    } else if (d < sm2) sm2 = d;
-                }
-                var add = sm2 - sm;
-                add = @min(add, space.* / @as(f32, @floatFromInt(buf.items.len)));
-                var idx: usize = 0;
-                while (idx < buf.items.len) {
-                    const k = buf.items[idx];
-                    const d = dim(k, axis);
-                    const mx = k.sz[axis].mx;
-                    if (@abs(d.* - sm) < 0.001) {
-                        const prev = d.*;
-                        d.* += add;
-                        if (d.* >= mx) {
-                            d.* = mx;
-                            _ = buf.swapRemove(idx);
-                            continue;
-                        }
-                        space.* -= (d.* - prev);
-                    }
-                    idx += 1;
-                }
-            }
-        }
-
-        pub fn calc(a: std.mem.Allocator, root: *T) !void {
-            try size(root, a, 0);
-            try size(root, a, 1);
+        pub fn calc(root: *T) void {
+            size(root, 0);
+            size(root, 1);
             pos(root, .{ 0, 0 });
         }
     };
@@ -217,6 +169,6 @@ pub const Elem = struct {
     kids: []*Elem = &[_]*Elem{},
 };
 
-pub fn layout(a: std.mem.Allocator, root: *Elem) !void {
-    try Layout(Elem).calc(a, root);
+pub fn layout(root: *Elem) void {
+    Layout(Elem).calc(root);
 }

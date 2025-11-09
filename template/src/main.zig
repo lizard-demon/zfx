@@ -15,8 +15,6 @@ const Widget = struct {
     al: [2]zfx.ui.layout.Align = .{ .start, .start },
 };
 
-var layout_buffer: [4096]u8 = undefined;
-var fba = std.heap.FixedBufferAllocator.init(&layout_buffer);
 var pass_action: zfx.sokol.gfx.PassAction = .{};
 var current_theme: theme.Theme = .{};
 
@@ -41,12 +39,11 @@ export fn frame() void {
 
     // Recompute layout when window size changes
     if (last_width != curr_width or last_height != curr_height) {
-        fba.reset();
         left = .{ .box = .{ .w = w / 2, .h = h }, .sz = .{ .{ .t = .grow }, .{ .t = .grow } } };
         right = .{ .box = .{ .w = w / 2, .h = h }, .sz = .{ .{ .t = .grow }, .{ .t = .grow } } };
         kids = [_]*Widget{ &left, &right };
         root = .{ .box = .{ .w = w, .h = h }, .sz = .{ .{ .t = .fixed, .mn = w, .mx = w }, .{ .t = .fixed, .mn = h, .mx = h } }, .dir = .h, .kids = &kids };
-        zfx.ui.layout.Layout(Widget).calc(fba.allocator(), &root) catch {};
+        zfx.ui.layout.Layout(Widget).calc(&root);
         last_width = curr_width;
         last_height = curr_height;
     }
