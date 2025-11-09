@@ -57,7 +57,8 @@ export fn frame() void {
     _ = ig.igBegin("Style", null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoCollapse | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
     inline for (comptime std.meta.fields(@TypeOf(current_theme.style))) |field| {
         const field_label = field.name ++ "\x00";
-        _ = zfx.ui.reflect.input(@ptrCast(field_label.ptr), &@field(current_theme.style, field.name));
+        const r = zfx.ui.reflect.input(@ptrCast(field_label.ptr), &@field(current_theme.style, field.name));
+        if (r.changed) theme.apply(&current_theme);
     }
     ig.igEnd();
 
@@ -67,18 +68,8 @@ export fn frame() void {
     _ = ig.igBegin("Colors", null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoCollapse | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
     inline for (comptime std.meta.fields(@TypeOf(current_theme.colors))) |field| {
         const field_label = field.name ++ "\x00";
-        _ = zfx.ui.reflect.input(@ptrCast(field_label.ptr), &@field(current_theme.colors, field.name));
-    }
-    ig.igEnd();
-
-    // Apply button window (floating top right, always on top)
-    ig.igSetNextWindowPos(.{ .x = w - 140, .y = 20 }, ig.ImGuiCond_Always);
-    const button_open = ig.igBegin("##apply", null, ig.ImGuiWindowFlags_NoTitleBar | ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoScrollbar | ig.ImGuiWindowFlags_NoSavedSettings | ig.ImGuiWindowFlags_AlwaysAutoResize | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
-    if (button_open) {
-        ig.igBringWindowToDisplayFront(ig.igGetCurrentWindow());
-        if (ig.igButton("Apply Theme")) {
-            theme.apply(&current_theme);
-        }
+        const r = zfx.ui.reflect.input(@ptrCast(field_label.ptr), &@field(current_theme.colors, field.name));
+        if (r.changed) theme.apply(&current_theme);
     }
     ig.igEnd();
 
