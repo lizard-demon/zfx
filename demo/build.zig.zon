@@ -3,10 +3,10 @@
     .version = "0.15.2",
     .dependencies = .{
         .zfx = .{
-            .url = "git+https://github.com/lizard-demon/zfx#b8cfe60a96072edd89d62c8a827534cf8443c5c1",
-            .hash = "zfx-0.1.0-fv1E6Z2TAADckLjmyCCzdDddmgH46lZ129HJFIeOfHu_",
+            .url = "git+https://github.com/lizard-demon/zfx#0b636072bc146060afdedd2f889e355b0896decb",
+            .hash = "zfx-0.1.0-fv1E6ReUAABsyND92GSE75g3ul1L3byVQMpI1SkJaWVN",
         },
     },
     .paths = .{""},
-    .fingerprint = 0xd642dfa0f6909335,
+    .fingerprint = 0xd642dfa08d773968,
 }
