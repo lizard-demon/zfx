@@ -6,11 +6,11 @@ One import for cimgui, sokol-zig, as well as a custom reflection-based widget ge
 
 All in ~300 lines of zig code.
 
-# [LIVE DEMO](https://lizard-demon.itch.io/zfx-template)
+# 100 Line [LIVE DEMO](https://lizard-demon.itch.io/zfx-template)
 
 ![image](image.png)
 
-[**PROJECT TEMPLATE**](template/)
+Please check out our [TEMPLATE](template/) to see how this was implimented.
 
 ## What's Included
 
