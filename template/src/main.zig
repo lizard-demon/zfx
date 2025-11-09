@@ -5,14 +5,15 @@ const ig = zfx.imgui;
 const theme = @import("theme.zig");
 
 const Widget = struct {
-    box: zfx.ui.layout.Box = .{},
-    sz: [2]struct { t: zfx.ui.layout.Sizing = .fit, v: f32 = 0, mn: f32 = 0, mx: f32 = 3.4e38 } = .{ .{}, .{} },
-    pad: [4]u16 = .{ 0, 0, 0, 0 },
+    pos: @Vector(2, f32) = @splat(0),
+    size: @Vector(2, f32) = @splat(0),
+    min: @Vector(2, f32) = @splat(0),
+    sz: [2]zfx.ui.layout.SizeSpec = .{ .{}, .{} },
+    pad: @Vector(4, u16) = @splat(0),
     gap: u16 = 0,
     dir: zfx.ui.layout.Dir = .h,
-    kids: []*Widget = &[_]*Widget{},
-    min: @Vector(2, f32) = @splat(0),
     al: [2]zfx.ui.layout.Align = .{ .start, .start },
+    kids: []*Widget = &[_]*Widget{},
 };
 
 var pass_action: zfx.sokol.gfx.PassAction = .{};
@@ -39,10 +40,10 @@ export fn frame() void {
 
     // Recompute layout when window size changes
     if (last_width != curr_width or last_height != curr_height) {
-        left = .{ .box = .{ .w = w / 2, .h = h }, .sz = .{ .{ .t = .grow }, .{ .t = .grow } } };
-        right = .{ .box = .{ .w = w / 2, .h = h }, .sz = .{ .{ .t = .grow }, .{ .t = .grow } } };
+        left = .{ .size = .{ w / 2, h }, .sz = .{ .{ .t = .grow }, .{ .t = .grow } } };
+        right = .{ .size = .{ w / 2, h }, .sz = .{ .{ .t = .grow }, .{ .t = .grow } } };
         kids = [_]*Widget{ &left, &right };
-        root = .{ .box = .{ .w = w, .h = h }, .sz = .{ .{ .t = .fixed, .mn = w, .mx = w }, .{ .t = .fixed, .mn = h, .mx = h } }, .dir = .h, .kids = &kids };
+        root = .{ .size = .{ w, h }, .sz = .{ .{ .t = .fixed, .mn = w, .mx = w }, .{ .t = .fixed, .mn = h, .mx = h } }, .dir = .h, .kids = &kids };
         zfx.ui.layout.Layout(Widget).calc(&root);
         last_width = curr_width;
         last_height = curr_height;
@@ -51,8 +52,8 @@ export fn frame() void {
     zfx.sokol.imgui.newFrame(.{ .width = zfx.sokol.app.width(), .height = zfx.sokol.app.height(), .delta_time = zfx.sokol.app.frameDuration() });
 
     // Style editor window (left panel, positioned by layout)
-    ig.igSetNextWindowPos(.{ .x = left.box.x, .y = left.box.y }, ig.ImGuiCond_Always);
-    ig.igSetNextWindowSize(.{ .x = left.box.w, .y = left.box.h }, ig.ImGuiCond_Always);
+    ig.igSetNextWindowPos(.{ .x = left.pos[0], .y = left.pos[1] }, ig.ImGuiCond_Always);
+    ig.igSetNextWindowSize(.{ .x = left.size[0], .y = left.size[1] }, ig.ImGuiCond_Always);
     _ = ig.igBegin("Style", null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoCollapse | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
     inline for (comptime std.meta.fields(@TypeOf(current_theme.style))) |field| {
         const field_label = field.name ++ "\x00";
@@ -61,8 +62,8 @@ export fn frame() void {
     ig.igEnd();
 
     // Colors editor window (right panel, positioned by layout)
-    ig.igSetNextWindowPos(.{ .x = right.box.x, .y = right.box.y }, ig.ImGuiCond_Always);
-    ig.igSetNextWindowSize(.{ .x = right.box.w, .y = right.box.h }, ig.ImGuiCond_Always);
+    ig.igSetNextWindowPos(.{ .x = right.pos[0], .y = right.pos[1] }, ig.ImGuiCond_Always);
+    ig.igSetNextWindowSize(.{ .x = right.size[0], .y = right.size[1] }, ig.ImGuiCond_Always);
     _ = ig.igBegin("Colors", null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoCollapse | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
     inline for (comptime std.meta.fields(@TypeOf(current_theme.colors))) |field| {
         const field_label = field.name ++ "\x00";
