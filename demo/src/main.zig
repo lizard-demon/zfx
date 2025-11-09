@@ -19,20 +19,22 @@ export fn frame() void {
 
     zfx.sokol.imgui.newFrame(.{ .width = zfx.sokol.app.width(), .height = zfx.sokol.app.height(), .delta_time = zfx.sokol.app.frameDuration() });
 
-    // Theme editor window
-    ig.igSetNextWindowPos(.{ .x = 10, .y = 10 }, ig.ImGuiCond_Always);
-    ig.igSetNextWindowSize(.{ .x = w - 20, .y = h - 20 }, ig.ImGuiCond_Always);
-    _ = ig.igBegin("zfx Theme Editor", null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove);
+    // Theme editor window (fullscreen, doesn't steal focus)
+    ig.igSetNextWindowPos(.{ .x = 0, .y = 0 }, ig.ImGuiCond_Always);
+    ig.igSetNextWindowSize(.{ .x = w, .y = h }, ig.ImGuiCond_Always);
+    _ = ig.igBegin("Theme Editor", null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoCollapse | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
+    _ = zfx.ui.reflect.input("theme", &current_theme);
+    ig.igEnd();
 
-    ig.igText("Edit theme with live preview");
-    ig.igSeparator();
-
-    // Use zfx reflection to edit the theme
-    const response = zfx.ui.reflect.input("theme", &current_theme);
-    if (response.changed) {
-        theme.apply(&current_theme);
+    // Apply button window (floating top right, always on top)
+    ig.igSetNextWindowPos(.{ .x = w - 140, .y = 20 }, ig.ImGuiCond_Always);
+    const button_open = ig.igBegin("##apply", null, ig.ImGuiWindowFlags_NoTitleBar | ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoScrollbar | ig.ImGuiWindowFlags_NoSavedSettings | ig.ImGuiWindowFlags_AlwaysAutoResize | ig.ImGuiWindowFlags_NoBringToFrontOnFocus);
+    if (button_open) {
+        ig.igBringWindowToDisplayFront(ig.igGetCurrentWindow());
+        if (ig.igButton("Apply Theme")) {
+            theme.apply(&current_theme);
+        }
     }
-
     ig.igEnd();
 
     zfx.sokol.gfx.beginPass(.{ .action = pass_action, .swapchain = zfx.sokol.glue.swapchain() });
