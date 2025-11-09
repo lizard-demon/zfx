@@ -42,16 +42,17 @@ pub fn Layout(comptime T: type) type {
             if (e.kids.len == 0) return;
 
             const along = @intFromEnum(e.dir) == a;
-            const pd: f32 = @floatFromInt(if (a == 0) e.pad[0] + e.pad[2] else e.pad[1] + e.pad[3]);
+            const pd_vec = @Vector(2, f32){ @floatFromInt(e.pad[0] + e.pad[2]), @floatFromInt(e.pad[1] + e.pad[3]) };
             const gaps: f32 = @floatFromInt(e.gap * @as(u16, @intCast(e.kids.len - 1)));
-            const parent = (if (a == 0) &e.box.w else &e.box.h).*;
+            const parent_vec = @Vector(2, f32){ e.box.w, e.box.h };
 
             var dims: [256]f32 = undefined;
             var grow: usize = 0;
             for (e.kids, 0..) |k, i| {
                 const sz = &k.sz[a];
-                dims[i] = if (a == 0) k.box.w else k.box.h;
-                if (@intFromEnum(sz.t) == 3) dims[i] = (parent - pd - gaps) * sz.v;
+                const size_vec = @Vector(2, f32){ k.box.w, k.box.h };
+                dims[i] = size_vec[a];
+                if (@intFromEnum(sz.t) == 3) dims[i] = (parent_vec[a] - pd_vec[a] - gaps) * sz.v;
                 if (@intFromEnum(sz.t) == 1) grow += 1;
             }
 
@@ -59,7 +60,7 @@ pub fn Layout(comptime T: type) type {
             for (dims[0..e.kids.len]) |v| content = if (along) content + v else @max(content, v);
             if (along) content += gaps;
 
-            const delta = parent - pd - content;
+            const delta = parent_vec[a] - pd_vec[a] - content;
             if (along and (delta < -0.001 or (delta > 0.001 and grow > 0))) {
                 var vals: [256]*f32 = undefined;
                 var limits: [256]f32 = undefined;
@@ -74,12 +75,18 @@ pub fn Layout(comptime T: type) type {
                 distribute(vals[0..n], limits[0..n], delta, delta < 0);
             } else if (!along) {
                 for (e.kids, 0..) |k, i| {
-                    if (@intFromEnum(k.sz[a].t) == 1) dims[i] = @min(parent - pd, k.sz[a].mx);
-                    dims[i] = @max(k.min[a], @min(dims[i], parent - pd));
+                    if (@intFromEnum(k.sz[a].t) == 1) dims[i] = @min(parent_vec[a] - pd_vec[a], k.sz[a].mx);
+                    dims[i] = @max(k.min[a], @min(dims[i], parent_vec[a] - pd_vec[a]));
                 }
             }
 
-            for (e.kids, 0..) |k, i| (if (a == 0) &k.box.w else &k.box.h).* = dims[i];
+            for (e.kids, 0..) |k, i| {
+                if (a == 0) {
+                    k.box.w = dims[i];
+                } else {
+                    k.box.h = dims[i];
+                }
+            }
         }
 
         fn pos(e: *T, p: @Vector(2, f32)) void {
@@ -89,8 +96,9 @@ pub fn Layout(comptime T: type) type {
 
             var content: @Vector(2, f32) = @splat(0);
             for (e.kids) |k| {
-                content[dir] += if (dir == 0) k.box.w else k.box.h;
-                content[1 - dir] = @max(content[1 - dir], if (dir == 0) k.box.h else k.box.w);
+                const size_vec = @Vector(2, f32){ k.box.w, k.box.h };
+                content[dir] += size_vec[dir];
+                content[1 - dir] = @max(content[1 - dir], size_vec[1 - dir]);
             }
             if (e.kids.len > 0) content[dir] += @floatFromInt(e.gap * @as(u16, @intCast(e.kids.len - 1)));
 
@@ -108,7 +116,8 @@ pub fn Layout(comptime T: type) type {
                 k.box.x = off[0];
                 k.box.y = off[1];
                 pos(k, off);
-                off[dir] += (if (dir == 0) k.box.w else k.box.h) + gap;
+                const size_vec = @Vector(2, f32){ k.box.w, k.box.h };
+                off[dir] += size_vec[dir] + gap;
             }
         }
 
