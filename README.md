@@ -35,3 +35,16 @@ const run_cmd = zfx.build.native.run(b, exe);
 ```
 
 For web builds, use `zfx.build.web.*` instead.
+
+## Tips
+
+**Expand structs by default**: Instead of `zfx.ui.reflect.input("config", &config)` which creates a collapsible tree node, you can iterate the fields directly to show them expanded:
+
+```zig
+inline for (comptime std.meta.fields(@TypeOf(config))) |field| {
+    const label = field.name ++ "\x00";
+    _ = zfx.ui.reflect.input(@ptrCast(label.ptr), &@field(config, field.name));
+}
+```
+
+This gives you fine-grained control over how structs are displayed.
