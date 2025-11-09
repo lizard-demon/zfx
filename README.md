@@ -2,14 +2,25 @@
 
 ![image](image.png)
 
-Minimal UI toolkit for Zig. Auto-generate ImGui widgets from any type. Constraint-based layout. Inspired by Clay.h and ImReflect.
+Cross-platform GUI and graphics engine for Zig. One import for cimgui, sokol-zig, as well as a custom reflection-based widget generator and a cnstraint-based layout system inspired by Clay.h.
+
+## What's Included
+
+zfx packages everything you need for cross-platform graphics and UI:
+
+- **[Sokol](https://github.com/floooh/sokol)**: Cross-platform graphics (Metal, D3D11, WebGL2, OpenGL)
+- **[Dear ImGui](https://github.com/ocornut/imgui)**: Immediate mode GUI via [cimgui](https://github.com/cimgui/cimgui)
+- **UI Reflection**: Auto-generate widgets from any Zig type (inspired by ImReflect)
+- **Constraint Layout**: Flexbox-like layout system (inspired by Clay.h)
+- **Professional Build System**: One-line setup for native and web
+
+All accessible through a single `@import("zfx")` - no manual dependency wrangling.
 
 ## Features
 
-- **UI Reflection**: Auto-generate ImGui widgets from any Zig type
-- **Constraint Layout**: Flexbox-like layout system inspired by Clay.h
-- **Professional Build System**: Clean API for native and web builds
-- **Minimal**: ~300 lines of code
+- **Cross-Platform**: Native (Windows, macOS, Linux) and Web (WASM) from the same code
+- **Type-Safe**: Compile-time reflection generates UI from your structs
+- **Minimal**: Only ~300 lines of code
 
 ## Install
 
