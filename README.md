@@ -8,6 +8,8 @@ All in ~300 lines of zig code.
 
 # [LIVE DEMO](https://lizard-demon.itch.io/zfx-template)
 
+[**DEMO PROJECT TEMPLATE**](template/)
+
 ![image](image.png)
 
 ## What's Included
