@@ -1,6 +1,10 @@
 # zfx
 
-Cross-platform GUI and graphics engine for Zig. One import for cimgui, sokol-zig, as well as a custom reflection-based widget generator and a cnstraint-based layout system inspired by Clay.h.
+Cross-platform GUI and graphics engine for Zig. 
+
+One import for cimgui, sokol-zig, as well as a custom reflection-based widget generator and a cnstraint-based layout system inspired by Clay.h.
+
+All in ~300 lines of zig code.
 
 ![image](image.png)
 
