@@ -8,6 +8,8 @@ All in ~300 lines of zig code.
 
 ![image](image.png)
 
+# [LIVE DEMO](https://lizard-demon.itch.io/zfx-template)
+
 ## What's Included
 
 zfx packages everything you need for cross-platform graphics and UI:
