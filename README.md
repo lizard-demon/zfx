@@ -1,8 +1,8 @@
 # zfx
 
-![image](image.png)
-
 Cross-platform GUI and graphics engine for Zig. One import for cimgui, sokol-zig, as well as a custom reflection-based widget generator and a cnstraint-based layout system inspired by Clay.h.
+
+![image](image.png)
 
 ## What's Included
 
