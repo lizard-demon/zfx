@@ -4,20 +4,24 @@ const theme = @import("theme.zig");
 
 const Widget = zfx.ui.layout.Widget;
 
-const StylePanel = struct {
-    widget: Widget = .{ .sw = -1, .sh = -1 },
-    style: theme.StyleVars = .{},
-};
-
-const ColorPanel = struct {
-    widget: Widget = .{ .sw = -1, .sh = -1 },
-    colors: theme.Colors = .{},
-};
-
 const App = struct {
     widget: Widget = .{ .dir = .h },
-    style: StylePanel = .{},
-    colors: ColorPanel = .{},
+    style: struct {
+        widget: Widget = .{ .sw = -1, .sh = -1 },
+        style: theme.StyleVars = .{},
+    } = .{},
+    colors: struct {
+        widget: Widget = .{ .sw = -1, .sh = -1 },
+        colors: theme.Colors = .{},
+    } = .{},
+
+    fn apply(self: *const App) void {
+        const t = theme.Theme{
+            .style = self.style.style,
+            .colors = self.colors.colors,
+        };
+        theme.apply(&t);
+    }
 };
 
 var pass_action: zfx.sokol.gfx.PassAction = .{};
@@ -26,15 +30,7 @@ var app: App = .{};
 export fn init() void {
     zfx.sokol.gfx.setup(.{ .environment = zfx.sokol.glue.environment() });
     zfx.sokol.imgui.setup(.{});
-    applyTheme();
-}
-
-fn applyTheme() void {
-    const t = theme.Theme{
-        .style = app.style.style,
-        .colors = app.colors.colors,
-    };
-    theme.apply(&t);
+    app.apply();
 }
 
 export fn frame() void {
@@ -56,7 +52,7 @@ export fn frame() void {
     // Render
     const r = zfx.ui.reflect.render("App", &app);
     if (r.changed) {
-        applyTheme();
+        app.apply();
     }
 
     zfx.sokol.gfx.beginPass(.{ .action = pass_action, .swapchain = zfx.sokol.glue.swapchain() });
