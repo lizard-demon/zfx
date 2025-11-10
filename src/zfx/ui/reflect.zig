@@ -1,4 +1,3 @@
-// Automatic ImGui widgets via compile-time reflection
 const std = @import("std");
 const ig = @import("cimgui");
 
@@ -6,36 +5,24 @@ pub const Response = struct {
     changed: bool = false,
     hovered: bool = false,
     active: bool = false,
-
-    fn check(self: *Response) void {
-        if (ig.igIsItemHovered(ig.ImGuiHoveredFlags_None)) self.hovered = true;
-        if (ig.igIsItemActive()) self.active = true;
-    }
 };
 
-pub fn input(label: [*:0]const u8, value: anytype) Response {
-    var r = Response{};
-    Render.widget(label, value, &r);
-    return r;
-}
-
-const Render = struct {
-    fn widget(label: [*:0]const u8, value: anytype, r: *Response) void {
+const render = struct {
+    fn any(label: [*:0]const u8, value: anytype, r: *Response) void {
         const T = @TypeOf(value.*);
         switch (@typeInfo(T)) {
             .int => r.changed = ig.igInputInt(label, @ptrCast(value)),
             .float => r.changed = ig.igInputFloat(label, @ptrCast(value)),
             .bool => r.changed = ig.igCheckbox(label, value),
-            .@"enum" => _enum(label, value, r),
-            .@"struct" => _struct(label, value, r),
-            .array => |arr| if (arr.child == u8) _string(label, value, r) else _array(label, value, r),
-            .optional => _optional(label, value, r),
+            .@"enum" => @"enum"(label, value, r),
+            .@"struct" => @"struct"(label, value, r),
+            .array => |arr| if (arr.child == u8) string(label, value, r) else array(label, value, r),
+            .optional => optional(label, value, r),
             else => ig.igText("unsupported"),
         }
-        r.check();
     }
 
-    fn _enum(label: [*:0]const u8, value: anytype, r: *Response) void {
+    fn @"enum"(label: [*:0]const u8, value: anytype, r: *Response) void {
         const T = @TypeOf(value.*);
         const current = @tagName(value.*);
         if (ig.igBeginCombo(label, current.ptr, ig.ImGuiComboFlags_None)) {
@@ -50,7 +37,7 @@ const Render = struct {
         }
     }
 
-    fn _struct(label: [*:0]const u8, value: anytype, r: *Response) void {
+    fn @"struct"(label: [*:0]const u8, value: anytype, r: *Response) void {
         ig.igPushID(label);
         defer ig.igPopID();
         if (ig.igTreeNode(label)) {
@@ -59,14 +46,14 @@ const Render = struct {
                 const field_label = field.name ++ "\x00";
                 ig.igPushID(field.name.ptr);
                 var fr = Response{};
-                widget(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
+                any(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
                 if (fr.changed) r.changed = true;
                 ig.igPopID();
             }
         }
     }
 
-    fn _array(label: [*:0]const u8, value: anytype, r: *Response) void {
+    fn array(label: [*:0]const u8, value: anytype, r: *Response) void {
         ig.igPushID(label);
         defer ig.igPopID();
         if (ig.igTreeNode(label)) {
@@ -76,18 +63,18 @@ const Render = struct {
                 const elem_label = std.fmt.bufPrintZ(&buf, "[{d}]", .{i}) catch "[?]";
                 ig.igPushID(elem_label.ptr);
                 var er = Response{};
-                widget(elem_label.ptr, item, &er);
+                any(elem_label.ptr, item, &er);
                 if (er.changed) r.changed = true;
                 ig.igPopID();
             }
         }
     }
 
-    fn _string(label: [*:0]const u8, value: anytype, r: *Response) void {
+    fn string(label: [*:0]const u8, value: anytype, r: *Response) void {
         if (ig.igInputText(label, @ptrCast(value), value.len, ig.ImGuiInputTextFlags_None)) r.changed = true;
     }
 
-    fn _optional(label: [*:0]const u8, value: anytype, r: *Response) void {
+    fn optional(label: [*:0]const u8, value: anytype, r: *Response) void {
         const T = @TypeOf(value.*);
         const child = @typeInfo(T).optional.child;
         var has = value.* != null;
@@ -100,8 +87,16 @@ const Render = struct {
         ig.igSameLine();
         if (value.*) |*inner| {
             var ir = Response{};
-            widget(label, inner, &ir);
+            any(label, inner, &ir);
             if (ir.changed) r.changed = true;
         } else ig.igTextDisabled("%s: null", label);
     }
 };
+
+pub fn widget(label: [*:0]const u8, value: anytype) Response {
+    var r = Response{};
+    render.any(label, value, &r);
+    if (ig.igIsItemHovered(ig.ImGuiHoveredFlags_None)) r.hovered = true;
+    if (ig.igIsItemActive()) r.active = true;
+    return r;
+}
