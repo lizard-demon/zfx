@@ -1,6 +1,7 @@
 const std = @import("std");
 const zfx = @import("zfx");
 const theme = @import("theme.zig");
+const demo = @import("demo.zig");
 
 const Widget = zfx.ui.Widget;
 
@@ -13,6 +14,10 @@ const GUI = struct {
     colors: struct {
         widget: Widget = .{ .sw = -1, .sh = -1 },
         colors: theme.Colors = .{},
+    } = .{},
+    demo: struct {
+        widget: Widget = .{ .sw = -1, .sh = -1 },
+        demo: demo.Demo = .{},
     } = .{},
 
     fn apply(self: *const GUI) void {
