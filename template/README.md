@@ -28,8 +28,9 @@ The web build automatically opens in your browser.
 This demo is designed to be forked and modified:
 
 1. Copy the `demo/` directory to start your project
-2. Modify `src/main.zig` with your own UI
-3. The build system is already set up for native and web
-4. See `src/theme.zig` for an example of a layout struct
+2. Delete the zig.zon and `zig fetch --save` the latest commit.
+3. Modify `src/main.zig` with your own UI
+4. The build system is already set up for native and web
+5. See `src/theme.zig` for an example of a layout struct
 
 Start here and build your own cross-platform GUI!

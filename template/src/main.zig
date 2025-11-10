@@ -4,7 +4,7 @@ const theme = @import("theme.zig");
 
 const Widget = zfx.ui.Widget;
 
-const App = struct {
+const GUI = struct {
     widget: Widget = .{ .dir = .h },
     style: struct {
         widget: Widget = .{ .sw = -1, .sh = -1 },
@@ -15,7 +15,7 @@ const App = struct {
         colors: theme.Colors = .{},
     } = .{},
 
-    fn apply(self: *const App) void {
+    fn apply(self: *const GUI) void {
         const t = theme.Theme{
             .style = self.style.style,
             .colors = self.colors.colors,
@@ -25,7 +25,7 @@ const App = struct {
 };
 
 var pass_action: zfx.sokol.gfx.PassAction = .{};
-var app: App = .{};
+var app: GUI = .{};
 
 export fn init() void {
     zfx.sokol.gfx.setup(.{ .environment = zfx.sokol.glue.environment() });
