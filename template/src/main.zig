@@ -42,12 +42,7 @@ export fn frame() void {
     // Set root size and layout
     app.widget.w = w;
     app.widget.h = h;
-    var children = [_]Widget{ app.style.widget, app.colors.widget };
-    zfx.ui.layout.layout(&app.widget, &children);
-
-    // Update child widgets with computed layout
-    app.style.widget = children[0];
-    app.colors.widget = children[1];
+    zfx.ui.layout.layout(&app);
 
     // Render
     const r = zfx.ui.reflect.render("App", &app);
