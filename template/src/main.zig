@@ -2,28 +2,20 @@ const std = @import("std");
 const zfx = @import("zfx");
 const theme = @import("theme.zig");
 
-const Widget = zfx.ui.Widget;
+const Widget = zfx.ui.layout.Widget;
 
 const StylePanel = struct {
-    self: Widget = .{ .w = zfx.ui.Size.Grow(), .h = zfx.ui.Size.Grow() },
-    theme: theme.Theme = .{},
-
-    pub fn onchange(self: *@This()) void {
-        theme.apply(&self.theme);
-    }
+    widget: Widget = .{ .sw = -1, .sh = -1 },
+    style: theme.StyleVars = .{},
 };
 
 const ColorPanel = struct {
-    self: Widget = .{ .w = zfx.ui.Size.Grow(), .h = zfx.ui.Size.Grow() },
-    theme: theme.Theme = .{},
-
-    pub fn onchange(self: *@This()) void {
-        theme.apply(&self.theme);
-    }
+    widget: Widget = .{ .sw = -1, .sh = -1 },
+    colors: theme.Colors = .{},
 };
 
 const App = struct {
-    self: Widget = .{ .dir = .h },
+    widget: Widget = .{ .dir = .h },
     style: StylePanel = .{},
     colors: ColorPanel = .{},
 };
@@ -34,7 +26,15 @@ var app: App = .{};
 export fn init() void {
     zfx.sokol.gfx.setup(.{ .environment = zfx.sokol.glue.environment() });
     zfx.sokol.imgui.setup(.{});
-    theme.apply(&app.style.theme);
+    applyTheme();
+}
+
+fn applyTheme() void {
+    const t = theme.Theme{
+        .style = app.style.style,
+        .colors = app.colors.colors,
+    };
+    theme.apply(&t);
 }
 
 export fn frame() void {
@@ -43,8 +43,21 @@ export fn frame() void {
 
     zfx.sokol.imgui.newFrame(.{ .width = zfx.sokol.app.width(), .height = zfx.sokol.app.height(), .delta_time = zfx.sokol.app.frameDuration() });
 
-    // Single call handles layout + rendering
-    _ = zfx.ui.ui_render("App", &app, .{ .w = w, .h = h });
+    // Set root size and layout
+    app.widget.w = w;
+    app.widget.h = h;
+    var children = [_]Widget{ app.style.widget, app.colors.widget };
+    zfx.ui.layout.layout(&app.widget, &children);
+
+    // Update child widgets with computed layout
+    app.style.widget = children[0];
+    app.colors.widget = children[1];
+
+    // Render
+    const r = zfx.ui.reflect.render("App", &app);
+    if (r.changed) {
+        applyTheme();
+    }
 
     zfx.sokol.gfx.beginPass(.{ .action = pass_action, .swapchain = zfx.sokol.glue.swapchain() });
     zfx.sokol.imgui.render();
