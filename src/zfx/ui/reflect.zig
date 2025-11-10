@@ -11,8 +11,28 @@ const render = struct {
     fn any(label: [*:0]const u8, value: anytype, r: *Response) void {
         const T = @TypeOf(value.*);
         switch (@typeInfo(T)) {
-            .int => r.changed = ig.igInputInt(label, @ptrCast(value)),
-            .float => r.changed = ig.igInputFloat(label, @ptrCast(value)),
+            .int => |int_info| {
+                if (int_info.bits == 32 and int_info.signedness == .signed) {
+                    r.changed = ig.igInputInt(label, @ptrCast(value));
+                } else {
+                    var temp: i32 = @intCast(value.*);
+                    if (ig.igInputInt(label, &temp)) {
+                        value.* = @intCast(temp);
+                        r.changed = true;
+                    }
+                }
+            },
+            .float => |float_info| {
+                if (float_info.bits == 32) {
+                    r.changed = ig.igInputFloat(label, @ptrCast(value));
+                } else {
+                    var temp: f32 = @floatCast(value.*);
+                    if (ig.igInputFloat(label, &temp)) {
+                        value.* = @floatCast(temp);
+                        r.changed = true;
+                    }
+                }
+            },
             .bool => r.changed = ig.igCheckbox(label, value),
             .@"enum" => @"enum"(label, value, r),
             .@"struct" => @"struct"(label, value, r),
@@ -52,17 +72,78 @@ const render = struct {
     }
 
     fn @"struct"(label: [*:0]const u8, value: anytype, r: *Response) void {
-        ig.igPushID(label);
-        defer ig.igPopID();
-        if (ig.igTreeNode(label)) {
-            defer ig.igTreePop();
-            inline for (comptime @typeInfo(@TypeOf(value.*)).@"struct".fields) |field| {
-                const field_label = field.name ++ "\x00";
-                ig.igPushID(field.name.ptr);
-                var fr = Response{};
-                any(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
-                if (fr.changed) r.changed = true;
-                ig.igPopID();
+        const T = @TypeOf(value.*);
+        const fields = @typeInfo(T).@"struct".fields;
+
+        // Check if struct has a 'self' Widget for windowing
+        const has_self = comptime blk: {
+            for (fields) |field| {
+                if (std.mem.eql(u8, field.name, "self") and field.type == @import("layout.zig").Widget) {
+                    break :blk true;
+                }
+            }
+            break :blk false;
+        };
+
+        if (has_self) {
+            const self_widget = &@field(value, "self");
+
+            // Set up window with layout
+            ig.igSetNextWindowPos(.{ .x = self_widget.pos[0], .y = self_widget.pos[1] }, ig.ImGuiCond_Always);
+            ig.igSetNextWindowSize(.{ .x = self_widget.size[0], .y = self_widget.size[1] }, ig.ImGuiCond_Always);
+            _ = ig.igBegin(label, null, ig.ImGuiWindowFlags_NoResize | ig.ImGuiWindowFlags_NoMove | ig.ImGuiWindowFlags_NoCollapse);
+
+            // Render all fields except 'self'
+            inline for (fields) |field| {
+                if (!std.mem.eql(u8, field.name, "self")) {
+                    const field_label = field.name ++ "\x00";
+                    ig.igPushID(field.name.ptr);
+                    var fr = Response{};
+
+                    // Check if field is a struct with 'self' - it becomes a child window
+                    const field_type_info = @typeInfo(field.type);
+                    if (field_type_info == .@"struct") {
+                        const field_has_self = comptime blk: {
+                            for (field_type_info.@"struct".fields) |f| {
+                                if (std.mem.eql(u8, f.name, "self") and f.type == @import("layout.zig").Widget) {
+                                    break :blk true;
+                                }
+                            }
+                            break :blk false;
+                        };
+
+                        if (field_has_self) {
+                            // Child struct with layout - just render it (it will create its own window)
+                            any(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
+                        } else {
+                            // Regular struct field
+                            any(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
+                        }
+                    } else {
+                        // Non-struct field
+                        any(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
+                    }
+
+                    if (fr.changed) r.changed = true;
+                    ig.igPopID();
+                }
+            }
+
+            ig.igEnd();
+        } else {
+            // Default tree rendering for structs without 'self'
+            ig.igPushID(label);
+            defer ig.igPopID();
+            if (ig.igTreeNode(label)) {
+                defer ig.igTreePop();
+                inline for (fields) |field| {
+                    const field_label = field.name ++ "\x00";
+                    ig.igPushID(field.name.ptr);
+                    var fr = Response{};
+                    any(@ptrCast(field_label.ptr), &@field(value, field.name), &fr);
+                    if (fr.changed) r.changed = true;
+                    ig.igPopID();
+                }
             }
         }
     }
@@ -188,7 +269,8 @@ const render = struct {
                 },
             }
         } else {
-            ig.igText("%s: vector<%d>", label, info.len);
+            const len: c_int = @intCast(info.len);
+            ig.igText("%s: vector<%d>", label, len);
         }
     }
 
