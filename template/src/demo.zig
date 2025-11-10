@@ -39,6 +39,10 @@ pub const Demo = struct {
 
     // error union
     result: anyerror!i32 = 100,
+
+    // function pointers
+    on_click: *const fn () void = &doNothing,
+    on_reset: *const fn () void = &resetDemo,
 };
 
 pub const Config = struct {
@@ -46,3 +50,15 @@ pub const Config = struct {
     timeout: f32 = 5.0,
     retries: i32 = 3,
 };
+
+var click_count: i32 = 0;
+
+fn doNothing() void {
+    click_count += 1;
+    std.debug.print("Button clicked! Count: {d}\n", .{click_count});
+}
+
+fn resetDemo() void {
+    click_count = 0;
+    std.debug.print("Demo reset!\n", .{});
+}
