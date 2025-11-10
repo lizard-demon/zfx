@@ -147,9 +147,9 @@ const draw = struct {
             else => vector_tree(label, value, info),
         };
         if (info.child == i32) return switch (info.len) {
-            2 => ig.igInputInt2(label, @ptrCast(value)),
-            3 => ig.igInputInt3(label, @ptrCast(value)),
-            4 => ig.igInputInt4(label, @ptrCast(value)),
+            2 => ig.igInputInt2(label, @ptrCast(value), ig.ImGuiInputTextFlags_None),
+            3 => ig.igInputInt3(label, @ptrCast(value), ig.ImGuiInputTextFlags_None),
+            4 => ig.igInputInt4(label, @ptrCast(value), ig.ImGuiInputTextFlags_None),
             else => vector_tree(label, value, info),
         };
         ig.igText("%s: vector<%d>", label, @as(c_int, @intCast(info.len)));
@@ -211,7 +211,7 @@ const draw = struct {
         const fn_info = @typeInfo(@typeInfo(@TypeOf(value.*)).pointer.child).@"fn";
         if (fn_info.params.len > 0) {
             var buf: [256]u8 = undefined;
-            const sig = std.fmt.bufPrintZ(&buf, "{s} (fn/{d})", .{ label, fn_info.params.len }) catch label;
+            const sig = std.fmt.bufPrintZ(&buf, "{s} (fn/{d})", .{ label, fn_info.params.len }) catch unreachable;
             ig.igTextDisabled("%s", sig.ptr);
             return false;
         }
