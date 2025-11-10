@@ -2,7 +2,7 @@ const std = @import("std");
 const zfx = @import("zfx");
 const theme = @import("theme.zig");
 
-const Widget = zfx.ui.layout.Widget;
+const Widget = zfx.ui.Widget;
 
 const App = struct {
     widget: Widget = .{ .dir = .h },
@@ -42,10 +42,10 @@ export fn frame() void {
     // Set root size and layout
     app.widget.w = w;
     app.widget.h = h;
-    zfx.ui.layout.layout(&app);
+    zfx.ui.layout(&app);
 
     // Render
-    const r = zfx.ui.reflect.reflect("App", &app);
+    const r = zfx.ui.reflect("App", &app);
     if (r.changed) {
         app.apply();
     }
