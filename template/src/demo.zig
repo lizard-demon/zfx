@@ -8,6 +8,9 @@ pub const Mode = union(enum) {
     timed: f32,
 };
 
+var shared_int: i32 = 999;
+var shared_config: Config = .{ .enabled = false, .timeout = 10.0, .retries = 5 };
+
 pub const Demo = struct {
     // primitives
     int_value: i32 = 42,
@@ -39,6 +42,10 @@ pub const Demo = struct {
 
     // error union
     result: anyerror!i32 = 100,
+
+    // pointers
+    int_ptr: *i32 = &shared_int,
+    config_ptr: *Config = &shared_config,
 
     // function pointers
     on_click: *const fn () void = &doNothing,
