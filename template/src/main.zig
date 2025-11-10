@@ -45,7 +45,7 @@ export fn frame() void {
     zfx.ui.layout.layout(&app);
 
     // Render
-    const r = zfx.ui.reflect.render("App", &app);
+    const r = zfx.ui.reflect.reflect("App", &app);
     if (r.changed) {
         app.apply();
     }
