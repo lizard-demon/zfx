@@ -5,26 +5,31 @@ const theme = @import("theme.zig");
 const Widget = zfx.ui.Widget;
 
 const StylePanel = struct {
-    self: Widget = .{},
+    self: Widget = .{ .w = zfx.ui.Size.Grow(), .h = zfx.ui.Size.Grow() },
     theme: theme.Theme = .{},
+
+    pub fn onchange(self: *@This()) void {
+        theme.apply(&self.theme);
+    }
 };
 
 const ColorPanel = struct {
-    self: Widget = .{},
+    self: Widget = .{ .w = zfx.ui.Size.Grow(), .h = zfx.ui.Size.Grow() },
     theme: theme.Theme = .{},
+
+    pub fn onchange(self: *@This()) void {
+        theme.apply(&self.theme);
+    }
 };
 
 const App = struct {
-    self: Widget = .{},
+    self: Widget = .{ .dir = .h },
     style: StylePanel = .{},
     colors: ColorPanel = .{},
 };
 
 var pass_action: zfx.sokol.gfx.PassAction = .{};
 var app: App = .{};
-
-var last_width: i32 = 0;
-var last_height: i32 = 0;
 
 export fn init() void {
     zfx.sokol.gfx.setup(.{ .environment = zfx.sokol.glue.environment() });
@@ -35,38 +40,11 @@ export fn init() void {
 export fn frame() void {
     const w: f32 = @floatFromInt(zfx.sokol.app.width());
     const h: f32 = @floatFromInt(zfx.sokol.app.height());
-    const curr_width = zfx.sokol.app.width();
-    const curr_height = zfx.sokol.app.height();
-
-    // Recompute layout when window size changes
-    if (last_width != curr_width or last_height != curr_height) {
-        // Set up child widgets
-        app.style.self = .{ .size = .{ w / 2, h }, .sz = .{ .{ .mode = .grow }, .{ .mode = .grow } } };
-        app.colors.self = .{ .size = .{ w / 2, h }, .sz = .{ .{ .mode = .grow }, .{ .mode = .grow } } };
-
-        // Set up root widget with children
-        var children = [_]*Widget{ &app.style.self, &app.colors.self };
-        app.self = .{
-            .size = .{ w, h },
-            .sz = .{ .{ .mode = .fixed, .min = w, .max = w }, .{ .mode = .fixed, .min = h, .max = h } },
-            .dir = .h,
-            .children = &children,
-        };
-
-        // Compute layout
-        zfx.ui.layout(&app.self);
-
-        last_width = curr_width;
-        last_height = curr_height;
-    }
 
     zfx.sokol.imgui.newFrame(.{ .width = zfx.sokol.app.width(), .height = zfx.sokol.app.height(), .delta_time = zfx.sokol.app.frameDuration() });
 
-    // Render entire app with reflection - it handles all windowing
-    const response = zfx.reflect.widget("App", &app);
-    if (response.changed) {
-        theme.apply(&app.style.theme);
-    }
+    // Single call handles layout + rendering
+    _ = zfx.ui.ui_render("App", &app, .{ .w = w, .h = h });
 
     zfx.sokol.gfx.beginPass(.{ .action = pass_action, .swapchain = zfx.sokol.glue.swapchain() });
     zfx.sokol.imgui.render();
