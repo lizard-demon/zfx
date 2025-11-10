@@ -15,7 +15,7 @@ const GUI = struct {
         widget: Widget = .{ .sw = -1, .sh = -1 },
         colors: theme.Colors = .{},
     } = .{},
-    demo: struct {
+    types: struct {
         widget: Widget = .{ .sw = -1, .sh = -1 },
         demo: demo.Demo = .{},
     } = .{},

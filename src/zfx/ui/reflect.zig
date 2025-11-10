@@ -76,7 +76,7 @@ const draw = struct {
             },
             .error_set => ig.igText("%s: error.%s", label, @errorName(value.*).ptr),
             .@"fn" => function(label, value, r),
-            else => ig.igText("unsupported"),
+            else => {},
         }
     }
 
@@ -270,10 +270,12 @@ const draw = struct {
             defer ig.igPopID();
             inline for (comptime std.meta.fields(T)) |field| {
                 if (std.mem.eql(u8, @tagName(value.*), field.name)) {
-                    const field_label = field.name ++ "\x00";
-                    var fr = Response{};
-                    any(@ptrCast(field_label.ptr), &@field(value.*, field.name), &fr);
-                    if (fr.changed) r.changed = true;
+                    if (@sizeOf(field.type) > 0) {
+                        const field_label = field.name ++ "\x00";
+                        var fr = Response{};
+                        any(@ptrCast(field_label.ptr), &@field(value.*, field.name), &fr);
+                        if (fr.changed) r.changed = true;
+                    }
                 }
             }
         } else {
